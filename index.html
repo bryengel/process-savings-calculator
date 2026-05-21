@@ -278,6 +278,10 @@
     <div class="s-label">Savings this cycle</div>
     <div id="stickySavings" class="s-num">$0</div>
   </div>
+  <div style="text-align:center">
+    <div class="s-label">Annual savings</div>
+    <div id="stickyAnnual" class="s-num">$0</div>
+  </div>
   <div class="badge" style="margin-top:0">
     <i class="ti ti-trending-down" aria-hidden="true" style="font-size:12px"></i>
     <span id="stickyBadge">0% reduction</span>
@@ -566,6 +570,7 @@
     const badge = Math.round(tPct) + '% time reduction';
     document.getElementById('badgeText').textContent = badge;
     document.getElementById('stickySavings').textContent = fmtD(cSaved);
+    document.getElementById('stickyAnnual').textContent = fmtD(ann);
     document.getElementById('stickyBadge').textContent = Math.round(tPct) + '% reduction';
 
     // Area chart
