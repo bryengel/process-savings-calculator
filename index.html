@@ -31,7 +31,7 @@
         --surface: #1a1d27;
         --surface2: #151820;
         --border: rgba(255,255,255,0.1);
-        --border2: rgba(255,255,255,0.2);
+        --border2: rgba(255,255,255,0.22);
         --text-primary: #f0ede8;
         --text-secondary: #aaa;
         --text-tertiary: #666;
@@ -53,6 +53,39 @@
     .wrap {
       width: 100%;
       max-width: 480px;
+    }
+
+    /* Sticky bar */
+    #stickyBar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: var(--bg);
+      border-bottom: .5px solid var(--border);
+      padding: .6rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transform: translateY(-100%);
+      transition: transform .22s ease, opacity .22s ease;
+      opacity: 0;
+    }
+    #stickyBar.visible {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    #stickyBar .s-num {
+      font-family: var(--font-mono);
+      font-weight: 500;
+      font-size: 20px;
+      color: var(--text-primary);
+    }
+    #stickyBar .s-label {
+      font-size: 10px;
+      color: var(--text-tertiary);
+      margin-bottom: 1px;
     }
 
     .hero {
@@ -156,9 +189,7 @@
       cursor: pointer;
     }
 
-    input[type="range"]:last-child {
-      margin-bottom: 0;
-    }
+    input[type="range"]:last-of-type { margin-bottom: 0; }
 
     input[type="range"]::-webkit-slider-thumb {
       -webkit-appearance: none;
@@ -180,15 +211,16 @@
       border: none;
     }
 
-    .legend {
+    .chart-legend {
       display: flex;
-      gap: 14px;
+      flex-wrap: wrap;
+      gap: 12px;
       margin-bottom: 10px;
       font-size: 11px;
       color: var(--text-secondary);
     }
 
-    .legend span {
+    .chart-legend span {
       display: flex;
       align-items: center;
       gap: 4px;
@@ -199,6 +231,7 @@
       height: 8px;
       border-radius: 2px;
       display: inline-block;
+      flex-shrink: 0;
     }
 
     .donut-grid {
@@ -235,18 +268,26 @@
       border-radius: 1px;
       display: inline-block;
     }
-
-    canvas-wrap {
-      position: relative;
-      width: 100%;
-      display: block;
-    }
   </style>
 </head>
 <body>
+
+<!-- Sticky savings bar -->
+<div id="stickyBar" role="banner">
+  <div>
+    <div class="s-label">Savings this cycle</div>
+    <div id="stickySavings" class="s-num">$0</div>
+  </div>
+  <div class="badge" style="margin-top:0">
+    <i class="ti ti-trending-down" aria-hidden="true" style="font-size:12px"></i>
+    <span id="stickyBadge">0% reduction</span>
+  </div>
+</div>
+
 <div class="wrap">
 
-  <div class="hero">
+  <!-- Hero -->
+  <div class="hero" id="heroSection">
     <div class="hero-label">Estimated savings this cycle</div>
     <div id="heroNum" class="hero-num">$0</div>
     <div class="badge">
@@ -255,6 +296,7 @@
     </div>
   </div>
 
+  <!-- KPI grid -->
   <div class="kpi-grid">
     <div class="kpi-card">
       <div class="kpi-label">Hours reclaimed</div>
@@ -274,6 +316,7 @@
     </div>
   </div>
 
+  <!-- Variables -->
   <div class="card">
     <div class="card-label">Variables</div>
 
@@ -293,20 +336,23 @@
     <input type="range" id="targetDays" min="0" max="90" value="45" step="1">
 
     <div class="slider-row"><span>Cycles per year</span><span id="val_cycles" class="slider-val">4×</span></div>
-    <input type="range" id="cycles" min="1" max="24" value="4" step="1" style="margin-bottom:0">
+    <input type="range" id="cycles" min="1" max="24" value="4" step="1">
   </div>
 
+  <!-- Area chart: cumulative cost over days -->
   <div class="card">
-    <div class="card-label">Labor cost comparison</div>
-    <div class="legend">
-      <span><span class="swatch" style="background:#7F77DD"></span>Current</span>
-      <span><span class="swatch" style="background:#1D9E75"></span>Target</span>
+    <div class="card-label">Cumulative cost over process duration</div>
+    <div class="chart-legend">
+      <span><span class="swatch" style="background:#7F77DD"></span>Current process</span>
+      <span><span class="swatch" style="background:#1D9E75"></span>Target process</span>
+      <span><span class="swatch" style="background:rgba(99,153,34,0.25);border:1px solid rgba(99,153,34,0.5)"></span>Savings zone</span>
     </div>
-    <div style="position:relative;width:100%;height:100px">
-      <canvas id="barChart" role="img" aria-label="Horizontal bar chart comparing current and target labor cost">Labor cost comparison</canvas>
+    <div style="position:relative;width:100%;height:210px">
+      <canvas id="areaChart" role="img" aria-label="Area chart showing cumulative labor cost for current vs target process duration, with shaded savings zone between them">Cumulative cost comparison chart</canvas>
     </div>
   </div>
 
+  <!-- Savings breakdown donuts -->
   <div class="card" style="margin-bottom:0">
     <div class="card-label">Savings breakdown</div>
     <div class="donut-grid">
@@ -358,27 +404,96 @@
   const fmtN = v => Math.round(Math.abs(v)).toLocaleString();
   const fmtF = v => Math.abs(v).toFixed(1);
 
-  let bc, cd, hd;
+  let ac, cd, hd;
+
+  // Vertical dashed line plugin for target day
+  let _tgtDay = 45;
+  const targetLinePlugin = {
+    id: 'targetLine',
+    afterDraw(chart) {
+      if (!_tgtDay) return;
+      const { ctx, chartArea, scales } = chart;
+      const x = scales.x.getPixelForValue(_tgtDay);
+      if (x < chartArea.left || x > chartArea.right) return;
+      ctx.save();
+      ctx.strokeStyle = '#1D9E75';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 3]);
+      ctx.globalAlpha = 0.6;
+      ctx.beginPath();
+      ctx.moveTo(x, chartArea.top);
+      ctx.lineTo(x, chartArea.bottom);
+      ctx.stroke();
+      ctx.restore();
+    }
+  };
 
   function initCharts() {
     const P = '#7F77DD', T = '#1D9E75', G = '#639922', GR = '#B4B2A9';
     const tickColor = '#888780';
     const dBase = { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false } } };
 
-    bc = new Chart(document.getElementById('barChart'), {
-      type: 'bar',
+    ac = new Chart(document.getElementById('areaChart'), {
+      type: 'line',
       data: {
-        labels: ['Current cost', 'Target cost'],
-        datasets: [{ data: [0, 0], backgroundColor: [P, T], borderRadius: 4, barPercentage: .55 }]
+        labels: [],
+        datasets: [
+          {
+            label: 'Current process',
+            data: [],
+            borderColor: P,
+            backgroundColor: 'rgba(99,153,34,0.18)',
+            fill: { target: 1, above: 'rgba(99,153,34,0.18)', below: 'transparent' },
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0
+          },
+          {
+            label: 'Target process',
+            data: [],
+            borderColor: T,
+            backgroundColor: 'transparent',
+            fill: false,
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0
+          }
+        ]
       },
       options: {
-        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => fmtD(ctx.raw) } } },
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: ctx => 'Day ' + ctx[0].label,
+              label: ctx => ctx.dataset.label + ': ' + fmtD(ctx.raw)
+            }
+          }
+        },
         scales: {
-          x: { ticks: { color: tickColor, font: { size: 11 }, callback: v => '$' + (v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v) }, grid: { color: 'rgba(136,135,128,0.15)' } },
-          y: { ticks: { color: tickColor, font: { size: 11 } }, grid: { display: false } }
+          x: {
+            ticks: {
+              color: tickColor,
+              font: { size: 11 },
+              maxTicksLimit: 6,
+              callback: v => 'Day ' + v
+            },
+            grid: { color: 'rgba(136,135,128,0.1)' }
+          },
+          y: {
+            ticks: {
+              color: tickColor,
+              font: { size: 11 },
+              callback: v => '$' + (v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v)
+            },
+            grid: { color: 'rgba(136,135,128,0.1)' }
+          }
         }
-      }
+      },
+      plugins: [targetLinePlugin]
     });
 
     cd = new Chart(document.getElementById('costDonut'), {
@@ -392,6 +507,22 @@
       data: { labels: ['Saved', 'Remaining'], datasets: [{ data: [1, 1], backgroundColor: [P, GR], borderWidth: 0 }] },
       options: { ...dBase, plugins: { ...dBase.plugins, tooltip: { callbacks: { label: ctx => fmtN(ctx.raw) + ' hrs' } } } }
     });
+  }
+
+  function buildAreaData(curDays, tgtDays, curC, tgtC) {
+    const pts = Math.min(curDays, 80);
+    const labels = [];
+    const curLine = [];
+    const tgtLine = [];
+    const cpd = curDays > 0 ? curC / curDays : 0;
+    const tpd = tgtDays > 0 ? tgtC / tgtDays : 0;
+    for (let i = 0; i <= pts; i++) {
+      const day = Math.round((i / pts) * curDays);
+      labels.push(day);
+      curLine.push(Math.round(day * cpd));
+      tgtLine.push(Math.round(Math.min(day, tgtDays) * tpd));
+    }
+    return { labels, curLine, tgtLine };
   }
 
   function gv(id) { return parseFloat(document.getElementById(id).value) || 0; }
@@ -431,12 +562,37 @@
     anim('kpiFTE', fte, fmtF);
     anim('kpiDays', dSaved, fmtN);
     anim('kpiAnnual', ann, fmtD);
-    document.getElementById('badgeText').textContent = Math.round(tPct) + '% time reduction';
 
-    if (bc) { bc.data.datasets[0].data = [curC, tgtC]; bc.update('none'); }
+    const badge = Math.round(tPct) + '% time reduction';
+    document.getElementById('badgeText').textContent = badge;
+    document.getElementById('stickySavings').textContent = fmtD(cSaved);
+    document.getElementById('stickyBadge').textContent = Math.round(tPct) + '% reduction';
+
+    // Area chart
+    _tgtDay = tgtDays;
+    if (ac) {
+      const { labels, curLine, tgtLine } = buildAreaData(curDays, tgtDays, curC, tgtC);
+      ac.data.labels = labels;
+      ac.data.datasets[0].data = curLine;
+      ac.data.datasets[1].data = tgtLine;
+      ac.update('none');
+    }
+
     if (cd) { cd.data.datasets[0].data = [Math.max(cSaved, 0.01), tgtC]; cd.update('none'); }
     if (hd) { hd.data.datasets[0].data = [Math.max(hSaved, 0.01), tgtH]; hd.update('none'); }
   }
+
+  // Sticky bar observer
+  const heroEl = document.getElementById('heroSection');
+  const stickyBar = document.getElementById('stickyBar');
+  const observer = new IntersectionObserver(entries => {
+    if (!entries[0].isIntersecting) {
+      stickyBar.classList.add('visible');
+    } else {
+      stickyBar.classList.remove('visible');
+    }
+  }, { threshold: 0 });
+  observer.observe(heroEl);
 
   ['people', 'salary', 'utilization', 'currentDays', 'targetDays', 'cycles'].forEach(id => {
     document.getElementById(id).addEventListener('input', calc);
