@@ -1,300 +1,449 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive ROI & Savings Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        :root {
-            --primary-dark: #4A00E0; /* A vibrant purple as a primary color */
-            --primary-accent: #8E2DE2; /* A lighter purple for accents */
-            --success-color: #33B830; /* Green from the palette */
-            --text-color: #E4F1F9;
-            --bg-color: #0A192F; /* Dark blue background */
-            --surface-color: #172A45; /* A slightly lighter blue for cards */
-            --border-color: #8892B0;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ROI Savings Calculator</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.6.0/dist/tabler-icons.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 40px 20px;
-        }
+    :root {
+      --bg: #ffffff;
+      --surface: #f5f5f3;
+      --surface2: #ffffff;
+      --border: rgba(0,0,0,0.12);
+      --border2: rgba(0,0,0,0.22);
+      --text-primary: #1a1a1a;
+      --text-secondary: #555;
+      --text-tertiary: #888;
+      --success-bg: #eaf3de;
+      --success-text: #3b6d11;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --font-mono: 'Courier New', Courier, monospace;
+    }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 350px 1fr;
-            gap: 30px;
-        }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1117;
+        --surface: #1a1d27;
+        --surface2: #151820;
+        --border: rgba(255,255,255,0.1);
+        --border2: rgba(255,255,255,0.2);
+        --text-primary: #f0ede8;
+        --text-secondary: #aaa;
+        --text-tertiary: #666;
+        --success-bg: #173404;
+        --success-text: #c0dd97;
+      }
+    }
 
-        header {
-            grid-column: 1 / -1;
-            text-align: center;
-            margin-bottom: 20px;
-        }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 2rem 1rem 3rem;
+    }
 
-        h1 {
-            color: #fff;
-            font-size: 2.5rem;
-            margin-bottom: 5px;
-        }
+    .wrap {
+      width: 100%;
+      max-width: 480px;
+    }
 
-        .subtitle {
-            font-size: 1.1rem;
-            color: var(--border-color);
-        }
+    .hero {
+      text-align: center;
+      padding: 1.75rem .5rem 1.5rem;
+    }
 
-        .card {
-            background: var(--surface-color);
-            padding: 30px;
-            border-radius: 12px;
-            border: 1px solid #2a3f5a;
-        }
+    .hero-label {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      letter-spacing: .07em;
+      margin-bottom: 8px;
+    }
 
-        h2 {
-            color: #fff;
-            margin-top: 0;
-            margin-bottom: 25px;
-            font-size: 1.5rem;
-            padding-bottom: 10px;
-            border-bottom: 1px solid var(--border-color);
-        }
+    .hero-num {
+      font-size: 52px;
+      font-weight: 500;
+      line-height: 1;
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+    }
 
-        .form-group {
-            margin-bottom: 20px;
-        }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 12px;
+      padding: 5px 13px;
+      background: var(--success-bg);
+      color: var(--success-text);
+      border-radius: var(--radius-md);
+      font-size: 12px;
+      font-weight: 500;
+    }
 
-        label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: var(--text-color);
-        }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 1.25rem;
+    }
 
-        input[type="number"] {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            font-size: 1rem;
-            background-color: var(--bg-color);
-            color: #fff;
-        }
-        
-        .slider-group {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
+    .kpi-card {
+      background: var(--surface);
+      border-radius: var(--radius-md);
+      padding: .875rem;
+    }
 
-        input[type="range"] {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 100%;
-            height: 8px;
-            background: #2a3f5a;
-            border-radius: 5px;
-            outline: none;
-        }
+    .kpi-label {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      margin-bottom: 5px;
+    }
 
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            background: var(--primary-accent);
-            cursor: pointer;
-            border-radius: 50%;
-        }
+    .kpi-val {
+      font-size: 22px;
+      font-weight: 500;
+      font-family: var(--font-mono);
+      color: var(--text-primary);
+    }
 
-        .chart-container {
-            position: relative;
-            margin-bottom: 20px;
-        }
-        
-        #comparisonChartContainer {
-            height: 300px; /* Set a fixed height for the bar chart container */
-        }
-    </style>
+    .card {
+      background: var(--surface2);
+      border: .5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .card-label {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      letter-spacing: .05em;
+      margin-bottom: 1.1rem;
+    }
+
+    .slider-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 4px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .slider-val {
+      font-family: var(--font-mono);
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 4px;
+      background: var(--border2);
+      border-radius: 2px;
+      outline: none;
+      margin-bottom: 1rem;
+      cursor: pointer;
+    }
+
+    input[type="range"]:last-child {
+      margin-bottom: 0;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #7F77DD;
+      cursor: pointer;
+      border: none;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #7F77DD;
+      cursor: pointer;
+      border: none;
+    }
+
+    .legend {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 10px;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .legend span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .swatch {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      display: inline-block;
+    }
+
+    .donut-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .donut-label {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      text-align: center;
+      margin-bottom: 6px;
+    }
+
+    .donut-legend {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 7px;
+      font-size: 10px;
+      color: var(--text-secondary);
+    }
+
+    .donut-legend span {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .dswatch {
+      width: 7px;
+      height: 7px;
+      border-radius: 1px;
+      display: inline-block;
+    }
+
+    canvas-wrap {
+      position: relative;
+      width: 100%;
+      display: block;
+    }
+  </style>
 </head>
 <body>
+<div class="wrap">
 
-    <div class="container">
-        <header>
-            <h1>Interactive Savings Dashboard</h1>
-            <div class="subtitle">Real-Time Visualization of Process Improvement ROI</div>
-        </header>
-
-        <!-- Inputs Panel -->
-        <div class="card">
-            <h2>Adjust Variables</h2>
-            <div class="form-group">
-                <label for="people">Team Size (People)</label>
-                <input type="number" id="people" value="7" min="1" step="1">
-            </div>
-
-            <div class="form-group">
-                <label for="salary">Average Annual Salary ($)</label>
-                <input type="number" id="salary" value="130000" min="0" step="1000">
-            </div>
-            
-            <div class="form-group">
-                <label for="utilizationRange">Allocation on Report (%)</label>
-                <div class="slider-group">
-                    <input type="range" id="utilizationRange" min="10" max="100" value="80" step="5">
-                    <span id="utilizationVal" style="font-weight: bold; width: 40px;">80%</span>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="currentDays">Current Processing Time (Days)</label>
-                <input type="number" id="currentDays" value="90" min="1" step="1">
-            </div>
-
-            <div class="form-group">
-                <label for="targetDays">Target Processing Time (Days)</label>
-                <input type="number" id="targetDays" value="45" min="0" step="1">
-            </div>
-        </div>
-
-        <!-- Charts and Results Panel -->
-        <div class="card">
-            <h2>Projected Impact</h2>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: center;">
-                <div>
-                    <h3>Cost Breakdown</h3>
-                    <div class="chart-container" style="height: 250px;">
-                        <canvas id="costChart"></canvas>
-                    </div>
-                </div>
-                <div>
-                    <h3>Man-Hours Breakdown</h3>
-                    <div class="chart-container" style="height: 250px;">
-                        <canvas id="hoursChart"></canvas>
-                    </div>
-                </div>
-            </div>
-             <div id="comparisonChartContainer" style="margin-top: 30px;">
-                <canvas id="comparisonChart"></canvas>
-            </div>
-        </div>
+  <div class="hero">
+    <div class="hero-label">Estimated savings this cycle</div>
+    <div id="heroNum" class="hero-num">$0</div>
+    <div class="badge">
+      <i class="ti ti-trending-down" aria-hidden="true" style="font-size:13px"></i>
+      <span id="badgeText">0% time reduction</span>
     </div>
+  </div>
 
-    <script>
-        const inputs = ['people', 'salary', 'currentDays', 'targetDays'];
-        const utilSlider = document.getElementById('utilizationRange');
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">Hours reclaimed</div>
+      <div id="kpiHours" class="kpi-val">0</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">FTE equivalent</div>
+      <div id="kpiFTE" class="kpi-val">0.0</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Days eliminated</div>
+      <div id="kpiDays" class="kpi-val">0</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Annual savings</div>
+      <div id="kpiAnnual" class="kpi-val">$0</div>
+    </div>
+  </div>
 
-        const costCtx = document.getElementById('costChart').getContext('2d');
-        const hoursCtx = document.getElementById('hoursChart').getContext('2d');
-        const comparisonCtx = document.getElementById('comparisonChart').getContext('2d');
-        
-        let costChart, hoursChart, comparisonChart;
+  <div class="card">
+    <div class="card-label">Variables</div>
 
-        function createCharts() {
-            costChart = new Chart(costCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Cost Saved', 'Remaining Cost'],
-                    datasets: [{
-                        data: [1,1],
-                        backgroundColor: [ '#33B830', '#8E2DE2' ],
-                        borderColor: 'transparent',
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#fff' } } } }
-            });
+    <div class="slider-row"><span>Team size</span><span id="val_people" class="slider-val">7 people</span></div>
+    <input type="range" id="people" min="1" max="50" value="7" step="1">
 
-            hoursChart = new Chart(hoursCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Hours Saved', 'Remaining Hours'],
-                    datasets: [{
-                        data: [1,1],
-                        backgroundColor: [ '#33B830', '#4A00E0' ],
-                        borderColor: 'transparent'
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#fff' } } } }
-            });
+    <div class="slider-row"><span>Avg annual salary</span><span id="val_salary" class="slider-val">$130k</span></div>
+    <input type="range" id="salary" min="40000" max="300000" value="130000" step="5000">
 
-            comparisonChart = new Chart(comparisonCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['Current State', 'Target State'],
-                    datasets: [
-                        {
-                            label: 'Labor Cost ($)',
-                            data: [0, 0],
-                            backgroundColor: '#8E2DE2',
-                            yAxisID: 'y'
-                        },
-                        {
-                            label: 'Man-Hours',
-                            data: [0, 0],
-                            backgroundColor: '#4A00E0',
-                             yAxisID: 'y1'
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: { ticks: { color: '#fff' } },
-                        y: { position: 'left', ticks: { color: '#fff' }, grid: { color: '#2a3f5a' } },
-                        y1: { position: 'right', ticks: { color: '#fff' }, grid: { drawOnChartArea: false } }
-                    },
-                    plugins: { legend: { labels: { color: '#fff' } } }
-                }
-            });
+    <div class="slider-row"><span>Time on this process</span><span id="val_utilization" class="slider-val">80%</span></div>
+    <input type="range" id="utilization" min="5" max="100" value="80" step="5">
+
+    <div class="slider-row"><span>Current processing time</span><span id="val_currentDays" class="slider-val">90 days</span></div>
+    <input type="range" id="currentDays" min="1" max="365" value="90" step="1">
+
+    <div class="slider-row"><span>Target processing time</span><span id="val_targetDays" class="slider-val">45 days</span></div>
+    <input type="range" id="targetDays" min="0" max="90" value="45" step="1">
+
+    <div class="slider-row"><span>Cycles per year</span><span id="val_cycles" class="slider-val">4×</span></div>
+    <input type="range" id="cycles" min="1" max="24" value="4" step="1" style="margin-bottom:0">
+  </div>
+
+  <div class="card">
+    <div class="card-label">Labor cost comparison</div>
+    <div class="legend">
+      <span><span class="swatch" style="background:#7F77DD"></span>Current</span>
+      <span><span class="swatch" style="background:#1D9E75"></span>Target</span>
+    </div>
+    <div style="position:relative;width:100%;height:100px">
+      <canvas id="barChart" role="img" aria-label="Horizontal bar chart comparing current and target labor cost">Labor cost comparison</canvas>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:0">
+    <div class="card-label">Savings breakdown</div>
+    <div class="donut-grid">
+      <div>
+        <div class="donut-label">Cost</div>
+        <div style="position:relative;width:100%;height:120px">
+          <canvas id="costDonut" role="img" aria-label="Donut chart showing ratio of cost saved vs remaining">Cost breakdown</canvas>
+        </div>
+        <div class="donut-legend">
+          <span><span class="dswatch" style="background:#639922"></span>Saved</span>
+          <span><span class="dswatch" style="background:#B4B2A9"></span>Remaining</span>
+        </div>
+      </div>
+      <div>
+        <div class="donut-label">Hours</div>
+        <div style="position:relative;width:100%;height:120px">
+          <canvas id="hoursDonut" role="img" aria-label="Donut chart showing ratio of hours saved vs remaining">Hours breakdown</canvas>
+        </div>
+        <div class="donut-legend">
+          <span><span class="dswatch" style="background:#7F77DD"></span>Saved</span>
+          <span><span class="dswatch" style="background:#B4B2A9"></span>Remaining</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const pv = {};
+
+  function anim(id, newV, fmt) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const from = pv[id] ?? 0;
+    pv[id] = newV;
+    if (Math.abs(from - newV) < 0.5) { el.textContent = fmt(newV); return; }
+    const t0 = performance.now();
+    function step(now) {
+      const p = Math.min((now - t0) / 480, 1);
+      const e = 1 - Math.pow(1 - p, 3);
+      el.textContent = fmt(from + (newV - from) * e);
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  const fmtD = v => '$' + Math.round(Math.abs(v)).toLocaleString();
+  const fmtN = v => Math.round(Math.abs(v)).toLocaleString();
+  const fmtF = v => Math.abs(v).toFixed(1);
+
+  let bc, cd, hd;
+
+  function initCharts() {
+    const P = '#7F77DD', T = '#1D9E75', G = '#639922', GR = '#B4B2A9';
+    const tickColor = '#888780';
+    const dBase = { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false } } };
+
+    bc = new Chart(document.getElementById('barChart'), {
+      type: 'bar',
+      data: {
+        labels: ['Current cost', 'Target cost'],
+        datasets: [{ data: [0, 0], backgroundColor: [P, T], borderRadius: 4, barPercentage: .55 }]
+      },
+      options: {
+        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => fmtD(ctx.raw) } } },
+        scales: {
+          x: { ticks: { color: tickColor, font: { size: 11 }, callback: v => '$' + (v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v) }, grid: { color: 'rgba(136,135,128,0.15)' } },
+          y: { ticks: { color: tickColor, font: { size: 11 } }, grid: { display: false } }
         }
-        
-        function calculate() {
-            const people = parseFloat(document.getElementById('people').value) || 0;
-            const salary = parseFloat(document.getElementById('salary').value) || 0;
-            const currentDays = parseFloat(document.getElementById('currentDays').value) || 0;
-            const targetDays = parseFloat(document.getElementById('targetDays').value) || 0;
-            const utilization = parseFloat(utilSlider.value) / 100;
+      }
+    });
 
-            document.getElementById('utilizationVal').textContent = (utilSlider.value) + '%';
-            
-            const hourlyRate = salary / 2080;
-            const hoursPerDay = 8 * utilization;
-            
-            const currentHours = currentDays * people * hoursPerDay;
-            const targetHours = targetDays * people * hoursPerDay;
-            const hoursSaved = Math.max(0, currentHours - targetHours);
+    cd = new Chart(document.getElementById('costDonut'), {
+      type: 'doughnut',
+      data: { labels: ['Saved', 'Remaining'], datasets: [{ data: [1, 1], backgroundColor: [G, GR], borderWidth: 0 }] },
+      options: { ...dBase, plugins: { ...dBase.plugins, tooltip: { callbacks: { label: ctx => fmtD(ctx.raw) } } } }
+    });
 
-            const currentCost = currentHours * hourlyRate;
-            const targetCost = targetHours * hourlyRate;
-            const costSaved = Math.max(0, currentCost - targetCost);
-            
-            // Update Doughnut Charts
-            costChart.data.datasets[0].data = [costSaved, targetCost];
-            costChart.update();
-            
-            hoursChart.data.datasets[0].data = [hoursSaved, targetHours];
-            hoursChart.update();
+    hd = new Chart(document.getElementById('hoursDonut'), {
+      type: 'doughnut',
+      data: { labels: ['Saved', 'Remaining'], datasets: [{ data: [1, 1], backgroundColor: [P, GR], borderWidth: 0 }] },
+      options: { ...dBase, plugins: { ...dBase.plugins, tooltip: { callbacks: { label: ctx => fmtN(ctx.raw) + ' hrs' } } } }
+    });
+  }
 
-            // Update Bar Chart
-            comparisonChart.data.datasets[0].data = [currentCost, targetCost];
-            comparisonChart.data.datasets[1].data = [currentHours, targetHours];
-            comparisonChart.update();
-        }
+  function gv(id) { return parseFloat(document.getElementById(id).value) || 0; }
+  function ul(id, v) { const e = document.getElementById('val_' + id); if (e) e.textContent = v; }
 
-        // Listeners
-        inputs.forEach(id => document.getElementById(id).addEventListener('input', calculate));
-        utilSlider.addEventListener('input', calculate);
+  function calc() {
+    const people = gv('people'), salary = gv('salary'), util = gv('utilization') / 100;
+    const curDays = gv('currentDays');
+    const tgtSlider = document.getElementById('targetDays');
+    tgtSlider.max = curDays;
+    if (parseFloat(tgtSlider.value) > curDays) tgtSlider.value = curDays;
+    const tgtDays = gv('targetDays');
+    const cycles = gv('cycles');
 
-        // Initial Calculation Run
-        createCharts();
-        calculate();
+    ul('people', people + (people === 1 ? ' person' : ' people'));
+    ul('salary', '$' + (salary / 1000).toFixed(0) + 'k');
+    ul('utilization', Math.round(util * 100) + '%');
+    ul('currentDays', curDays + (curDays === 1 ? ' day' : ' days'));
+    ul('targetDays', tgtDays + (tgtDays === 1 ? ' day' : ' days'));
+    ul('cycles', cycles + '×');
 
-    </script>
+    const hr = salary / 2080;
+    const hpd = 8 * util;
+    const curH = curDays * people * hpd;
+    const tgtH = tgtDays * people * hpd;
+    const hSaved = Math.max(0, curH - tgtH);
+    const curC = curH * hr;
+    const tgtC = tgtH * hr;
+    const cSaved = Math.max(0, curC - tgtC);
+    const dSaved = Math.max(0, curDays - tgtDays);
+    const tPct = curDays > 0 ? (dSaved / curDays) * 100 : 0;
+    const fte = hSaved / 2080;
+    const ann = cSaved * cycles;
+
+    anim('heroNum', cSaved, fmtD);
+    anim('kpiHours', hSaved, fmtN);
+    anim('kpiFTE', fte, fmtF);
+    anim('kpiDays', dSaved, fmtN);
+    anim('kpiAnnual', ann, fmtD);
+    document.getElementById('badgeText').textContent = Math.round(tPct) + '% time reduction';
+
+    if (bc) { bc.data.datasets[0].data = [curC, tgtC]; bc.update('none'); }
+    if (cd) { cd.data.datasets[0].data = [Math.max(cSaved, 0.01), tgtC]; cd.update('none'); }
+    if (hd) { hd.data.datasets[0].data = [Math.max(hSaved, 0.01), tgtH]; hd.update('none'); }
+  }
+
+  ['people', 'salary', 'utilization', 'currentDays', 'targetDays', 'cycles'].forEach(id => {
+    document.getElementById(id).addEventListener('input', calc);
+  });
+
+  initCharts();
+  calc();
+</script>
 </body>
 </html>
