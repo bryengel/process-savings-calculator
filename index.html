@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Process Optimization ROI Calculator</title>
+    <style>
+        :root {
+            --primary-color: #1a365d;
+            --secondary-color: #2b6cb0;
+            --success-color: #2f855a;
+            --background-color: #f7fafc;
+            --surface-color: #ffffff;
+            --text-main: #2d3748;
+            --text-muted: #718096;
+            --border-color: #e2e8f0;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-main);
+            line-height: 1.5;
+            margin: 0;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin: 0 0 10px 0;
+            font-size: 2.2rem;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
+
+        @media (min-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr 1.2fr;
+            }
+        }
+
+        .card {
+            background: var(--surface-color);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .card h2 {
+            color: var(--primary-color);
+            margin-top: 0;
+            margin-bottom: 25px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+            font-size: 1.4rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-main);
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            background-color: #f8fafc;
+            transition: border-color 0.2s;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+            background-color: #fff;
+        }
+
+        .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        input[type="range"] {
+            flex-grow: 1;
+        }
+
+        .results-box {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .result-card {
+            background-color: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid var(--secondary-color);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .result-card.savings {
+            background-color: #f0fff4;
+            border-left-color: var(--success-color);
+            grid-column: span 2;
+        }
+
+        .result-card.savings h3 {
+            color: var(--success-color);
+        }
+
+        .result-card h3 {
+            margin: 0 0 5px 0;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+        }
+
+        .result-card .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .result-card.savings .value {
+            font-size: 2.2rem;
+            color: #22543d;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .highlight-row {
+            background-color: #f0fff4;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Process Savings ROI Calculator</h1>
+            <div class="subtitle">Analyze labor efficiency and cost reduction impacts in real-time</div>
+        </header>
+
+        <div class="grid">
+            <!-- Inputs Panel -->
+            <div class="card">
+                <h2>🎛️ Adjust Variables</h2>
+                
+                <div class="form-group">
+                    <label for="people">Team Size (People)</label>
+                    <input type="number" id="people" value="7" min="1" step="1">
+                </div>
+
+                <div class="form-group">
+                    <label for="salary">Average Annual Salary ($)</label>
+                    <input type="number" id="salary" value="130000" min="0" step="1000">
+                </div>
+
+                <div class="form-group">
+                    <label for="utilization">Allocation on Report (%)</label>
+                    <div class="slider-group">
+                        <input type="range" id="utilizationRange" min="10" max="100" value="80" step="5">
+                        <span id="utilizationVal" style="font-weight: bold; width: 40px;">80%</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="currentDays">Current Processing Time (Days)</label>
+                    <input type="number" id="currentDays" value="90" min="1" step="1">
+                </div>
+
+                <div class="form-group">
+                    <label for="targetDays">Target Processing Time (Days)</label>
+                    <input type="number" id="targetDays" value="45" min="0" step="1">
+                </div>
+            </div>
+
+            <!-- Results Panel -->
+            <div class="card">
+                <h2>📈 Projected Savings</h2>
+                
+                <div class="results-box">
+                    <div class="result-card">
+                        <h3>Man-Hours Saved</h3>
+                        <div class="value" id="hoursSavedCard">2,016 hrs</div>
+                    </div>
+                    <div class="result-card">
+                        <h3>Equivalent Hourly Rate</h3>
+                        <div class="value" id="hourlyRateCard">$62.50</div>
+                    </div>
+                    <div class="result-card savings">
+                        <h3>Direct Labor Savings</h3>
+                        <div class="value" id="costSavedCard">$126,000</div>
+                    </div>
+                </div>
+
+                <h2>📋 Scenario Comparison</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>State</th>
+                            <th>Duration</th>
+                            <th>Man-Hours</th>
+                            <th>Labor Cost</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Current</td>
+                            <td><span id="tblCurrentDays">90</span> days</td>
+                            <td><span id="tblCurrentHours">4,032</span> hrs</td>
+                            <td>$<span id="tblCurrentCost">252,000</span></td>
+                        </tr>
+                        <tr>
+                            <td>Target</td>
+                            <td><span id="tblTargetDays">45</span> days</td>
+                            <td><span id="tblTargetHours">2,016</span> hrs</td>
+                            <td>$<span id="tblTargetCost">126,000</span></td>
+                        </tr>
+                        <tr class="highlight-row">
+                            <td>Savings</td>
+                            <td><span id="tblSavedDays">45</span> days</td>
+                            <td><span id="tblSavedHours">2,016</span> hrs</td>
+                            <td>$<span id="tblSavedCost">126,000</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const inputs = ['people', 'salary', 'currentDays', 'targetDays'];
+        const utilSlider = document.getElementById('utilizationRange');
+        const utilVal = document.getElementById('utilizationVal');
+
+        // Helper to format currency
+        function formatCurrency(val) {
+            return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
+        }
+
+        // Helper to format decimal numbers
+        function formatNumber(val) {
+            return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(val);
+        }
+
+        function calculate() {
+            const people = parseFloat(document.getElementById('people').value) || 0;
+            const salary = parseFloat(document.getElementById('salary').value) || 0;
+            const currentDays = parseFloat(document.getElementById('currentDays').value) || 0;
+            const targetDays = parseFloat(document.getElementById('targetDays').value) || 0;
+            const utilization = parseFloat(utilSlider.value) / 100;
+
+            utilVal.textContent = (utilSlider.value) + '%';
+
+            // Constants based on standard business work year
+            const standardWorkYearHours = 2080;
+            const hoursPerDay = 8 * utilization;
+            
+            const hourlyRate = salary / standardWorkYearHours;
+
+            // Hours
+            const currentHours = currentDays * people * hoursPerDay;
+            const targetHours = targetDays * people * hoursPerDay;
+            const hoursSaved = Math.max(0, currentHours - targetHours);
+
+            // Costs
+            const currentCost = currentHours * hourlyRate;
+            const targetCost = targetHours * hourlyRate;
+            const costSaved = Math.max(0, currentCost - targetCost);
+            const daysSaved = Math.max(0, currentDays - targetDays);
+
+            // Update UI Cards
+            document.getElementById('hoursSavedCard').textContent = formatNumber(hoursSaved) + ' hrs';
+            document.getElementById('hourlyRateCard').textContent = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(hourlyRate);
+            document.getElementById('costSavedCard').textContent = formatCurrency(costSaved);
+
+            // Update UI Table
+            document.getElementById('tblCurrentDays').textContent = formatNumber(currentDays);
+            document.getElementById('tblCurrentHours').textContent = formatNumber(currentHours);
+            document.getElementById('tblCurrentCost').textContent = formatNumber(currentCost);
+
+            document.getElementById('tblTargetDays').textContent = formatNumber(targetDays);
+            document.getElementById('tblTargetHours').textContent = formatNumber(targetHours);
+            document.getElementById('tblTargetCost').textContent = formatNumber(targetCost);
+
+            document.getElementById('tblSavedDays').textContent = formatNumber(daysSaved);
+            document.getElementById('tblSavedHours').textContent = formatNumber(hoursSaved);
+            document.getElementById('tblSavedCost').textContent = formatNumber(costSaved);
+        }
+
+        // Listeners
+        inputs.forEach(id => {
+            document.getElementById(id).addEventListener('input', calculate);
+        });
+        utilSlider.addEventListener('input', calculate);
+
+        // Initial Calculation Run
+        calculate();
+    </script>
+</body>
+</html>
